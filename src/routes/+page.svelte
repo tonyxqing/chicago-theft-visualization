@@ -71,12 +71,17 @@
           {/each}
         </g>
         <g class="map">
-          {#each kde_motor_theft.features as d, i}
-          <path clip-path="url(#clip-path)" id={`mt-${i}`} d={pathGenerator(d).slice(0, pathGenerator(d).indexOf('Z'))} opacity={value === 4 ? 1 : 0}  fill={`rgba(${(i + 1) * 15},19,59,${(i + 1) * i * 0.055})`} stroke="black"></path>          
+          {#if value === 4}
+            {#each kde_motor_theft.features as d, i}
+            <path clip-path="url(#clip-path)" id={`mt-${i}`} d={pathGenerator(d).slice(0, pathGenerator(d).indexOf('Z'))}   fill={`rgba(${(i + 1) * 15},19,59,${(i + 1) * i * 0.055})`} stroke="black"></path>          
             {/each}
-          {#each kde_theft.features as d, i}
-            <path clip-path="url(#clip-path)" id={`t-${i}`} d={pathGenerator(d).slice(0, pathGenerator(d).indexOf('Z'))} opacity={value === 2 ? 1 : 0} fill={`rgba(${(i + 1) * 15},19,59,${(i + 1) * i * 0.055})`} stroke="black"></path>
-          {/each}
+          {/if}
+          {#if value === 2}
+            {#each kde_theft.features as d, i}
+              <path clip-path="url(#clip-path)" id={`t-${i}`} d={pathGenerator(d).slice(0, pathGenerator(d).indexOf('Z'))} fill={`rgba(${(i + 1) * 15},19,59,${(i + 1) * i * 0.055})`} stroke="black"></path>
+            {/each}
+          {/if}
+
         </g>
 
         <g >
@@ -86,6 +91,7 @@
           {/each}
           
         </g>
+        {#if value === 1 || value === 3}
         <g >
           {#each chicagodata.features as d, i}
           {@const shape_area_norm = parseInt(d.properties.shape_area) * 0.00000000268936051}
@@ -100,6 +106,8 @@
           {/if}          
         {/each}
         </g>
+        {/if}          
+
     </svg>
     
   </div>
