@@ -14,10 +14,11 @@
     let value: number;
     const steps = [
       "<p>As one of America's largest and most diverse cities, Chicago has long been a hub of activity for both residents and tourists alike. Unfortunately, it has also been a hotbed for theft and motor theft, with many citizens falling victim to these crimes every year.</p><p> In this data visualization, we will examine the prevalence and trends of theft and motor theft in Chicago, shedding light on this important issue and providing insights into the challenges faced by law enforcement and communities in combating these crimes.</p>",
-      "<p>The scatterplot uses tweened values to automatically update your points with smooth transitions. It also binds to the width of the container <code>div</code>, so its responsive by default.</p>",
-      "<p>Try resizing me to see the 'side-by-side' version, compared to the 'text-on-top' version that appears on small screens.</p><p>Want it to always appear 'text-on-top'? Just comment out the media query at the bottom of our styles (as in, leave the styles but comment out the surrounding <code>media</code> query).</p>",      "<p>Last year in Chicago there were over .</p>",
-      "<p>The scatterplot uses tweened values to automatically update your points with smooth transitions. It also binds to the width of the container <code>div</code>, so its responsive by default.</p>",
-      "<p>Try resizing me to see the 'side-by-side' version, compared to the 'text-on-top' version that appears on small screens.</p><p>Want it to always appear 'text-on-top'? Just comment out the media query at the bottom of our styles (as in, leave the styles but comment out the surrounding <code>media</code> query).</p>",
+      "<p>The choropleth map that we've created for this data visualization uses normalized data based on both the number of thefts and the area of each neighborhood in Chicago. The intensity of the color on the map reflects the relative severity of the problem in each neighborhood, with darker shades indicating a higher number of thefts per unit area.</p><p>By using this color scale, we can quickly identify the neighborhoods that are most affected by theft and motor theft in the city, highlighting areas that may require greater attention and resources from law enforcement and community organizations.</p>",
+      "<p>In addition to the choropleth map, we've also used a kernel density plot to visualize the distribution of thefts across Chicago. Through providing a continuous representation of the density of thefts across the city, this plot can reveal patterns that might not be immediately apparent from other types of visualization. For instance, it can help identify areas with high concentrations of thefts that might not be highlighted by the choropleth map, which can be influenced by the size and shape of each neighborhood.</p><p>Using this complementary approach, we can gain a more complete understanding of the prevalence and distribution of theft in Chicago, and better inform efforts to address this important issue.</p>",
+      "<p>Our choropleth map of motor thefts in Chicago provides an overview of the distribution of this type of crime across the city. While the map may not reveal many noticeable differences compared to the theft map, it does show that certain neighborhoods have a higher concentration of incidents relative to their size. We can see that the concentration for motor theft shifts primarily to South Chicago when compared to thefts.</p>",
+      "<p>The KDE plot of motor thefts in Chicago highlights the difference in pattern of motor theft concentration compared to our previous plot of thefts overall. In contrast to the previous plot that showed the highest concentration of thefts occurring in the Loop and extending up to Rogers Park in the North, this plot shows that the highest concentration of motor thefts is clustered around the Loop and down to the South Chicago area.</p><p>This information can be useful for identifying the areas where interventions and prevention strategies need to be targeted to address the specific challenge of motor theft in Chicago. By examining both plots, we can develop a more complete understanding of the spatial patterns of theft and motor theft across the city.</p>",
+      "<p>Visualizations of theft and motor theft in Chicago reveal that these crimes are prevalent across the city, with concentrations varying in different neighborhoods. Combating these crimes presents significant challenges for law enforcement and communities alike, including limited resources, complex socio-economic factors, and evolving criminal tactics.<p></p>Additionally, dense urban areas and underreporting of incidents further complicate efforts to address these crimes effectively. Despite these challenges, law enforcement and communities are working together to implement prevention and intervention strategies to reduce the incidence of theft and motor theft in Chicago. By utilizing data-driven approaches, such as the visualizations presented here, we can better understand the scope of the problem and allocate resources more effectively to combat these crimes.</p>"
     ];
 
     let tick = 0;
@@ -35,7 +36,10 @@
       projection = d3.geoMercator().scale((100 * width)).center([-87.6598, 41.9081]);
       pathGenerator = d3.geoPath(projection);
     })
+
 </script>
+
+
 <section >
   <div class="hero">
     <h1>Chicago Data Visualization</h1>
@@ -60,29 +64,44 @@
         <g >
           {#each chicagodata.features as d, i}
           <!-- svelte-ignore a11y-click-events-have-key-events -->
-          {console.log(parseInt(d.properties.shape_area) * 0.00000000268936051)}
-            <path d={pathGenerator(d)} fill={value === 0 ? "white" : 
-                                                              value === 1 || value === 2 ? `rgba(244, 15, 151, ${(d.properties.num_motor_thefts ?? 0) / (parseInt(d.properties.shape_area) * 0.00000000268936051 + .1)})` :
-                                                              value === 3 || value === 4 ? `rgba(244, 15, 151, ${(d.properties.num_thefts ?? 0) / (parseInt(d.properties.shape_area) * 0.00000000268936051 + .1) })` : "none"} stroke="black" on:click={(event) => {console.log(d)}}></path>
           
+            <path d={pathGenerator(d)} fill={value === 0 ? "white" : 
+                                                              value === 3 || value === 4 ? `rgba(244, 15, 151, ${(d.properties.num_motor_thefts ?? 0) / (parseInt(d.properties.shape_area) * 0.00000000268936051 + .1)})` :
+                                                              value === 1 || value === 2 ? `rgba(244, 15, 151, ${(d.properties.num_thefts ?? 0) / (parseInt(d.properties.shape_area) * 0.00000000268936051 + .1) })` : "none"} stroke="black" on:click={(event) => {console.log(d)}}></path>
           {/each}
         </g>
         <g class="map">
           {#each kde_motor_theft.features as d, i}
-          <path clip-path="url(#clip-path)" id={`mt-${i}`} d={pathGenerator(d).slice(0, pathGenerator(d).indexOf('Z'))} opacity={value === 2 ? 1 : 0}  fill={`rgba(${(i + 1) * 15},19,59,${(i + 1) * i * 0.055})`} stroke="black"></path>          
+          <path clip-path="url(#clip-path)" id={`mt-${i}`} d={pathGenerator(d).slice(0, pathGenerator(d).indexOf('Z'))} opacity={value === 4 ? 1 : 0}  fill={`rgba(${(i + 1) * 15},19,59,${(i + 1) * i * 0.055})`} stroke="black"></path>          
             {/each}
           {#each kde_theft.features as d, i}
-            <path clip-path="url(#clip-path)" id={`t-${i}`} d={pathGenerator(d).slice(0, pathGenerator(d).indexOf('Z'))} opacity={value === 4 ? 1 : 0} fill={`rgba(${(i + 1) * 15},19,59,${(i + 1) * i * 0.055})`} stroke="black"></path>
+            <path clip-path="url(#clip-path)" id={`t-${i}`} d={pathGenerator(d).slice(0, pathGenerator(d).indexOf('Z'))} opacity={value === 2 ? 1 : 0} fill={`rgba(${(i + 1) * 15},19,59,${(i + 1) * i * 0.055})`} stroke="black"></path>
           {/each}
         </g>
+
         <g >
           {#each chicagodata.features as d, i}
           <!-- svelte-ignore a11y-click-events-have-key-events -->
-            <path d={pathGenerator(d)} fill={"none"} stroke="black" on:click={(event) => {console.log(d)}}></path>
-          
+          <path d={pathGenerator(d)} fill={"none"} stroke="black" on:click={(event) => {console.log(d)}}></path>
           {/each}
+          
+        </g>
+        <g >
+          {#each chicagodata.features as d, i}
+          {@const shape_area_norm = parseInt(d.properties.shape_area) * 0.00000000268936051}
+          {@const neighborhood_centroid = d3.polygonCentroid(d.geometry.coordinates[0].map(x => projection(x)))}
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          {#if value === 1 && shape_area_norm > .1 && (d.properties.num_thefts ?? 0)/shape_area_norm > 1 && neighborhood_centroid[0]}
+            <text stroke="white" font-size="11px" text-anchor="middle" alignment-baseline="middle" x={neighborhood_centroid[0]} y={neighborhood_centroid[1]}>{d.properties.pri_neigh}</text>
+          {/if}  
+          
+          {#if value === 3 && shape_area_norm > .1 && (d.properties.num_motor_thefts ?? 0)/shape_area_norm > 1 && neighborhood_centroid[0]} 
+            <text fill="black" stroke="white" font-size="11px" text-anchor="middle" alignment-baseline="middle" x={neighborhood_centroid[0]} y={neighborhood_centroid[1]}>{d.properties.pri_neigh}</text>
+          {/if}          
+        {/each}
         </g>
     </svg>
+    
   </div>
 </div>
 <div class="hero">
