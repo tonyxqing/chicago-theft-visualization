@@ -99,7 +99,7 @@
           <path d={pathGenerator(chicago_outline.features[0])} fill="white" stroke="black" stroke-width="1px"></path>
         </clipPath>
         <rect clip-path="url(#clip-path)" fill="white" height="100%" width="100%"></rect>
-        <g >
+        <g id="filled-neighborhoods">
           {#each chicagodata.features as d, i}
           <!-- svelte-ignore a11y-click-events-have-key-events -->
           
@@ -127,7 +127,7 @@
 
         </g>
         {#if [2,4].includes(value)}
-        <g id="clickable-neighborhood">
+        <g id="clickable-neighborhood" transition:fade>
           {#each chicagodata.features as d, i}
           <!-- svelte-ignore a11y-click-events-have-key-events -->
           <path  d={pathGenerator(d)} fill={"none"} stroke="black" on:click={(event) => {clicked(event, d)}}></path>
@@ -198,6 +198,9 @@
     justify-content: center;
   }
 
+  #filled-neighborhoods > path {
+    transition: fill 500ms;
+  }
   .step-content {
     pointer-events: none;
     font-size: 1rem;
