@@ -6,7 +6,7 @@
   import chicago_outline from './../chicago_outline.json'
   import * as d3 from 'd3';
   import Scrolly from "./Scrolly.svelte";
-
+  import { fade } from "svelte/transition";
   // Array values from Chicago Crime data
   // #11 lon 
   // #10 lat
@@ -20,7 +20,8 @@
       "<p>The KDE plot of motor thefts in Chicago highlights the difference in pattern of motor theft concentration compared to our previous plot of thefts overall. In contrast to the previous plot that showed the highest concentration of thefts occurring in the Loop and extending up to Rogers Park in the North, this plot shows that the highest concentration of motor thefts is clustered around the Loop and down to the South Chicago area.</p><p>This information can be useful for identifying the areas where interventions and prevention strategies need to be targeted to address the specific challenge of motor theft in Chicago. By examining both plots, we can develop a more complete understanding of the spatial patterns of theft and motor theft across the city.</p>",
       "<p>Visualizations of theft and motor theft in Chicago reveal that these crimes are prevalent across the city, with concentrations varying in different neighborhoods. Combating these crimes presents significant challenges for law enforcement and communities alike, including limited resources, complex socio-economic factors, and evolving criminal tactics.<p></p>Additionally, dense urban areas and underreporting of incidents further complicate efforts to address these crimes effectively. Despite these challenges, law enforcement and communities are working together to implement prevention and intervention strategies to reduce the incidence of theft and motor theft in Chicago. By utilizing data-driven approaches, such as the visualizations presented here, we can better understand the scope of the problem and allocate resources more effectively to combat these crimes.</p>"
     ];
-
+    let svg;
+    let zoom;
     let tick = 0;
     setInterval(() => {
       tick += 1;
@@ -28,21 +29,57 @@
     const height = 800;
     const width = 800;
     const viewBox = `0 0 ${height} ${width}`;
-    let projection: d3.GeoProjection = d3.geoMercator().scale((100 * width)).center([-87.6598, 41.9081]);;
-    $: console.log(projection);
-    $: tick = tick % kde_motor_theft.features.length;
-    $: pathGenerator = d3.geoPath(projection);
+    let isZoomed = false;
+    $: (value === 5) ? ((isZoomed) ? null : (()=>{isZoomed = true; clicked(null, chicagodata.features[26])})()) :  ((isZoomed) ? (() => {isZoomed = false; reset()})():null);
+    let projection: d3.GeoProjection = d3.geoMercator()
+                                        .scale((100 * width))
+                                        .rotate([0, 0])
+                                        .center([-87.717, 41.83724])
+                                        .translate([width/2, height/2]);
+    const pathGenerator = d3.geoPath(projection);
+    function clicked(event, d) {
+      const [[x0, y0], [x1, y1]] = pathGenerator.bounds(d);
+      svg.transition().delay(350).duration(750).call(
+        zoom.transform,
+        d3.zoomIdentity
+          .translate(width / 2, height / 2)
+          .scale(Math.min(8, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height)))
+          .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
+      );
+    }
+
+  function reset() {
+    svg.transition().delay(350).duration(750).call(
+      zoom.transform,
+      d3.zoomIdentity,
+      d3.zoomTransform(svg.node()).invert([width / 2, height / 2])
+    );
+  }
+
+    let svgref: any;
     onMount(() => {
-      projection = d3.geoMercator().scale((100 * width)).center([-87.6598, 41.9081]);
-      pathGenerator = d3.geoPath(projection);
+      svg = d3.select(svgref);
+      function zoomed(event) {
+            d3.select("#mapgroup").attr("transform", event.transform);
+      }
+
+      zoom = d3
+            .zoom()
+            .scaleExtent([1, 20])
+            .translateExtent([
+                [0, 0],
+                [height , width],
+            ])
+            .on("zoom", zoomed);
+      svg.call(zoom).on('wheel.zoom', null).on('dblclick.zoom', null);
     })
 
 </script>
 
 
-<section >
+<section>
   <div class="hero">
-    <h1>Chicago Data Visualization</h1>
+    <h1 >Chicago Data Visualization</h1>
     <h2>By <a href="https://tonyxqing.github.io" target="_blank">Tony</a></h2>
   </div>
 <div class="section-container">
@@ -56,7 +93,8 @@
     </Scrolly>
   </div>
   <div class="map-container sticky">
-    <svg {viewBox} >
+    <svg bind:this={svgref} id="mapbox" {viewBox} >
+      <g id="mapgroup"> 
         <clipPath id="clip-path">
           <path d={pathGenerator(chicago_outline.features[0])} fill="white" stroke="black" stroke-width="1px"></path>
         </clipPath>
@@ -66,43 +104,53 @@
           <!-- svelte-ignore a11y-click-events-have-key-events -->
           
             <path d={pathGenerator(d)} fill={value === 0 ? "white" : 
-                                                              value === 3 || value === 4 ? `rgba(244, 15, 151, ${(d.properties.num_motor_thefts ?? 0) / (parseInt(d.properties.shape_area) * 0.00000000268936051 + .1)})` :
-                                                              value === 1 || value === 2 ? `rgba(244, 15, 151, ${(d.properties.num_thefts ?? 0) / (parseInt(d.properties.shape_area) * 0.00000000268936051 + .1) })` : "none"} stroke="black" on:click={(event) => {console.log(d)}}></path>
+                                                              [3,4,5].includes(value) ? `rgba(244, 15, 151, ${(d.properties.num_motor_thefts ?? 0) / (parseInt(d.properties.shape_area) * 0.00000000268936051 + .1)})` :
+                                                              [1,2].includes(value) ? `rgba(244, 15, 151, ${(d.properties.num_thefts ?? 0) / (parseInt(d.properties.shape_area) * 0.00000000268936051 + .1) })` : "none"} stroke="black" on:click={(event) => {console.log(d)}}></path>
           {/each}
         </g>
         <g class="map">
+          
+          {#if [4].includes(value)}
+          <g transition:fade>
             {#each kde_motor_theft.features as d, i}
-            <path clip-path="url(#clip-path)" id={`mt-${i}`} d={pathGenerator(d).slice(0, pathGenerator(d).indexOf('Z'))} opacity={value===4?1:0} fill={`rgba(${(i + 1) * 15},19,59,${(i + 1) * i * 0.055})`} stroke="black"></path>          
+            <path clip-path="url(#clip-path)" id={`mt-${i}`} d={pathGenerator(d).slice(0, pathGenerator(d).indexOf('Z'))} fill={`rgba(${(i + 1) * 15},19,59,${(i + 1) * i * 0.055})`} stroke="black"></path>          
             {/each}
+          </g>
+          {/if}
+          {#if [2].includes(value)}
+          <g transition:fade>
             {#each kde_theft.features as d, i}
-              <path clip-path="url(#clip-path)" id={`t-${i}`} d={pathGenerator(d).slice(0, pathGenerator(d).indexOf('Z'))} opacity={value===2?1:0} fill={`rgba(${(i + 1) * 15},19,59,${(i + 1) * i * 0.055})`} stroke="black"></path>
+              <path clip-path="url(#clip-path)" id={`t-${i}`} d={pathGenerator(d).slice(0, pathGenerator(d).indexOf('Z'))} opacity={value === 2 ? 1 : 0} fill={`rgba(${(i + 1) * 15},19,59,${(i + 1) * i * 0.055})`} stroke="black"></path>
             {/each}
-        </g>
+            </g>
+          {/if}
 
-        <g >
+        </g>
+        {#if [2,4].includes(value)}
+        <g id="clickable-neighborhood">
           {#each chicagodata.features as d, i}
           <!-- svelte-ignore a11y-click-events-have-key-events -->
-          <path d={pathGenerator(d)} fill={"none"} stroke="black" on:click={(event) => {console.log(d)}}></path>
+          <path  d={pathGenerator(d)} fill={"none"} stroke="black" on:click={(event) => {clicked(event, d)}}></path>
           {/each}
-          
         </g>
-        {#if value === 1 || value === 3}
+        {/if}
+        {#if [1,3].includes(value)}
         <g >
           {#each chicagodata.features as d, i}
           {@const shape_area_norm = parseInt(d.properties.shape_area) * 0.00000000268936051}
           {@const neighborhood_centroid = d3.polygonCentroid(d.geometry.coordinates[0].map(x => projection(x)))}
           <!-- svelte-ignore a11y-click-events-have-key-events -->
-          {#if value === 1 && shape_area_norm > .1 && (d.properties.num_thefts ?? 0)/shape_area_norm > 1 && neighborhood_centroid[0]}
-            <text stroke="white" font-size="11px" text-anchor="middle" alignment-baseline="middle" x={neighborhood_centroid[0]} y={neighborhood_centroid[1]}>{d.properties.pri_neigh}</text>
+          {#if value === 1 && shape_area_norm > .15 && (d.properties.num_thefts ?? 0)/shape_area_norm > 1 && neighborhood_centroid[0]}
+            <text transition:fade fill="#efefef"  font-size="11px" text-anchor="middle" alignment-baseline="middle" x={neighborhood_centroid[0]} y={neighborhood_centroid[1]}>{d.properties.pri_neigh}</text>
           {/if}  
           
-          {#if value === 3 && shape_area_norm > .1 && (d.properties.num_motor_thefts ?? 0)/shape_area_norm > 1 && neighborhood_centroid[0]} 
-            <text fill="black" stroke="white" font-size="11px" text-anchor="middle" alignment-baseline="middle" x={neighborhood_centroid[0]} y={neighborhood_centroid[1]}>{d.properties.pri_neigh}</text>
+          {#if value === 3 && shape_area_norm > .15 && (d.properties.num_motor_thefts ?? 0)/shape_area_norm > 1 && neighborhood_centroid[0]} 
+            <text transition:fade fill="#efefef"  font-size="11px" text-anchor="middle" alignment-baseline="middle" x={neighborhood_centroid[0]} y={neighborhood_centroid[1]}>{d.properties.pri_neigh}</text>
           {/if}          
         {/each}
         </g>
         {/if}          
-
+      </g>
     </svg>
     
   </div>
@@ -121,10 +169,6 @@
     background-color: blanchedalmond;
   }
 
-  path {
-    transition: 500ms;
-  }
-
   .map-container {
     display: flex;
     height: 90vh;
@@ -137,9 +181,6 @@
     border: 2px solid rgb(0, 0, 0);
     width: 100%;
     pointer-events: all;
-  }
-  path{
-    transition: 500ms;
   }
   .hero {
     height: 30vh;
@@ -158,6 +199,7 @@
   }
 
   .step-content {
+    pointer-events: none;
     font-size: 1rem;
     background: whitesmoke;
     color: #ccc;
@@ -166,7 +208,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    transition: background 500ms ease;
+    transition: background 250ms;
     box-shadow: 1px 1px 10px rgba(0, 0, 0, .2);
     text-align: left;
 		width: 75%;
@@ -185,10 +227,11 @@
   }
 
   .section-container {
+    pointer-events: none;
     width: 100%;
     margin-top: 1em;
     text-align: center;
-    transition: background 500ms;
+    transition: background 250ms;
     display: flex;
   }
   .steps-container {
