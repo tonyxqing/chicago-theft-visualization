@@ -75,7 +75,7 @@
                 [height , width],
             ])
             .on("zoom", zoomed);
-      svg.call(zoom).on('wheel.zoom', null).on('dblclick.zoom', null);
+      svg.call(zoom).on('.zoom', null);
     })
 
 </script>
@@ -133,7 +133,9 @@
         <g id="clickable-neighborhood" transition:fade>
           {#each chicagodata.features as d, i}
           <!-- svelte-ignore a11y-click-events-have-key-events -->
-          <path  d={pathGenerator(d)} fill={"none"} stroke="black" on:click={(event) => {clicked(event, d)}}></path>
+          <path  d={pathGenerator(d)} fill={"none"} stroke="black" on:click={(event) => {
+            // clicked(event, d)
+            }}></path>
           {/each}
         </g>
         {/if}
