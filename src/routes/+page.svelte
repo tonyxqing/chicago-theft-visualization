@@ -21,14 +21,12 @@
       "<p>A closer look at the Loop reveals something sus.</p>",
       "<p>Visualizations of theft and motor theft in Chicago reveal that these crimes are prevalent across the city, with concentrations varying in different neighborhoods. Combating these crimes presents significant challenges for law enforcement and communities alike, including limited resources, complex socio-economic factors, and evolving criminal tactics.<p></p>Additionally, dense urban areas and underreporting of incidents further complicate efforts to address these crimes effectively. Despite these challenges, law enforcement and communities are working together to implement prevention and intervention strategies to reduce the incidence of theft and motor theft in Chicago. By utilizing data-driven approaches, such as the visualizations presented here, we can better understand the scope of the problem and allocate resources more effectively to combat these crimes.</p>"
     ];
-    let svg;
-    let zoom;
-    let audio;
-    let tick = 0;
-
-    setInterval(() => {
-      tick += 1;
-    }, 3000)
+    let svg: d3.Selection<SVGElement, any, null, any>;
+    let zoom: d3.ZoomBehavior<SVGElement, any>;
+    let audio: HTMLAudioElement;
+    
+    let hoveredNeighborhood = "";
+    let neighborhoodStats = {motor_theft: 0, theft: 0};
     const height = 800;
     const width = 800;
     const viewBox = `0 0 ${height} ${width}`;
@@ -40,7 +38,7 @@
     .center([-87.717, 41.83724])
     .translate([width/2, height/2]);
     const pathGenerator = d3.geoPath(projection);
-    function clicked(event, d) {
+    function clicked(event: d3.D3ZoomEvent<SVGElement, any>, d: d3.GeoPermissibleObjects) {
       const [[x0, y0], [x1, y1]] = pathGenerator.bounds(d);
       svg.transition().delay(350).duration(750).call(
         zoom.transform,
@@ -56,19 +54,19 @@
     svg.transition().delay(350).duration(750).call(
       zoom.transform,
       d3.zoomIdentity,
-      d3.zoomTransform(svg.node()).invert([width / 2, height / 2])
+      d3.zoomTransform(svg.node()!).invert([width / 2, height / 2])
     );
   }
 
-    let svgref: any;
+    let svgref: SVGElement;
     onMount(() => {
       svg = d3.select(svgref);
-      function zoomed(event) {
-            d3.select("#mapgroup").attr("transform", event.transform);
+      function zoomed(event: d3.D3ZoomEvent<SVGElement, any>) {
+            d3.select("#mapgroup").attr("transform", (event.transform).toString());
       }
 
-      zoom = d3
-            .zoom()
+      zoom = (d3
+            .zoom() as d3.ZoomBehavior<SVGElement, any>)
             .scaleExtent([1, 20])
             .translateExtent([
                 [0, 0],
@@ -77,7 +75,6 @@
             .on("zoom", zoomed);
       svg.call(zoom).on('.zoom', null);
     })
-
 </script>
 
 
@@ -95,9 +92,11 @@
       </div>
       {/each}
     </Scrolly>
+    <div style={{height: "100px"}}></div>
   </div>
   <div class="map-container sticky">
     <svg bind:this={svgref} id="mapbox" {viewBox} >
+
       <g id="mapgroup"> 
         <clipPath id="clip-path">
           <path d={pathGenerator(chicago_outline.features[0])} fill="white" stroke="black" stroke-width="1px"></path>
@@ -109,11 +108,10 @@
           
             <path d={pathGenerator(d)} fill={value === 0 ? "white" : 
                                                               [3,4,5].includes(value) ? `rgba(244, 15, 151, ${(d.properties.num_motor_thefts ?? 0) / (parseInt(d.properties.shape_area) * 0.00000000268936051 + .1)})` :
-                                                              [1,2].includes(value) ? `rgba(244, 15, 151, ${(d.properties.num_thefts ?? 0) / (parseInt(d.properties.shape_area) * 0.00000000268936051 + .1) })` : "none"} stroke="black" on:click={(event) => {console.log(d)}}></path>
+                                                              [1,2].includes(value) ? `rgba(244, 15, 151, ${(d.properties.num_thefts ?? 0) / (parseInt(d.properties.shape_area) * 0.00000000268936051 + .1) })` : "white"} stroke="black" on:click={(event) => {console.log(d)}}></path>
           {/each}
         </g>
         <g class="map">
-          
           {#if [4].includes(value)}
           <g transition:fade>
             {#each kde_motor_theft.features as d, i}
@@ -129,13 +127,11 @@
             </g>
           {/if}
         </g>
-        {#if [2,4].includes(value)}
+        {#if [2,4,6].includes(value)}
         <g id="clickable-neighborhood" transition:fade>
           {#each chicagodata.features as d, i}
           <!-- svelte-ignore a11y-click-events-have-key-events -->
-          <path  d={pathGenerator(d)} fill={"none"} stroke="black" on:click={(event) => {
-            // clicked(event, d)
-            }}></path>
+          <path  d={pathGenerator(d)} fill={"none"} stroke="black" on:mouseenter={() => {if (value === 6) {hoveredNeighborhood=d.properties.pri_neigh; neighborhoodStats={motor_theft: (d.properties.num_motor_thefts ?? 0) * 1443, theft: (d.properties.num_thefts ?? 0)*3292}}}} on:click={()=>{clicked(null, d)}}></path>
           {/each}
         </g>
         {/if}
@@ -148,7 +144,6 @@
           {#if value === 1 && shape_area_norm > .15 && (d.properties.num_thefts ?? 0)/shape_area_norm > 1 && neighborhood_centroid[0]}
             <text transition:fade fill="#efefef"  font-size="11px" text-anchor="middle" alignment-baseline="middle" x={neighborhood_centroid[0]} y={neighborhood_centroid[1]}>{d.properties.pri_neigh}</text>
           {/if}  
-          
           {#if value === 3 && shape_area_norm > .15 && (d.properties.num_motor_thefts ?? 0)/shape_area_norm > 1 && neighborhood_centroid[0]} 
             <text transition:fade fill="#efefef"  font-size="11px" text-anchor="middle" alignment-baseline="middle" x={neighborhood_centroid[0]} y={neighborhood_centroid[1]}>{d.properties.pri_neigh}</text>
           {/if}          
@@ -156,7 +151,7 @@
         </g>
         {/if}
         {#if value === 5}           
-        <g in:fade={{duration: 3000, delay: 1500}} out:fade transform="translate(248, 5)">
+        <g in:fade={{duration: 1500, delay: 1500}} out:fade transform="translate(248, 5)">
           <path d="m307.95364,298.70967l0.102,0.228l3.638,-0.073l0,0.209l-4.031,0.096l-3.351,0.073l-2.842,0.402l-0.046,0.338l-0.001,1.183l-0.082,0.134l-0.026,3.421l-0.03,0.872l-0.01,1.348l-3.84,0.041l-0.032,0.719l-0.207,0.615l-0.175,0.257l-0.479,0.51l-0.473,0.341l-0.7,0.308l-0.632,0.143l-1.108,0.048l-0.458,0.101l-0.287,0.14l-0.339,0.29l-0.271,0.456l-0.102,0.445l0.011,0.587l1.039,-0.006l0.044,1.593l-1.055,0.02l0.027,1.461l0.12,-0.004l0.051,3.664l0.043,0.013l0.088,1.497l0.069,1.886l0.014,1.953l-0.078,2.262l0.053,3.37l-0.113,0.005l0.066,0.474l-0.047,0.296l0.078,4.984l0.49,0.283l0.412,0.388l0.298,0.443l-1.746,0.259l-2.707,0.331l0.931,-1.341l0.361,-0.478l0.208,-0.405l0.184,-0.499l0.138,-0.725l0.013,-0.583l-0.06,-2.352l-0.142,-8.452l-0.132,-7.485l-0.038,-1.414l0.008,-0.508l0.02,-1.315l0.063,-0.475l0.127,-0.455l0.412,-0.839l0.408,-0.52l0.64,-0.539l1.275,-0.775l0.709,-0.58l0.288,-0.332l0.429,-0.665l-4.016,0.021l-2.435,-0.103l-3.23,0.018l-0.299,0.027l-1.913,-0.004l-1.339,-0.069l-0.406,0.005l-0.456,-0.065l0.088,2.798l0.074,4.036l-0.042,1.38l0.044,2.321l0.032,0.454l-0.003,1.211l0.087,4.945l0.016,1.396l0.086,4.295l0.082,4.73l-0.021,0.647l0.052,2.796l-0.048,0.898l-2.105,0.043l-2.485,0.037l-0.06,-2.845l-0.078,-4.863l-0.052,-2.395l-0.056,-1.987l-0.023,-1.296l-0.498,-0.004l-3.78,0.062l0.04,1.733l0.114,5.666l0.102,1.74l0.079,4.263l-3.61,0.076l-0.835,0.027l-1.557,0.009l-0.111,-1.319l-0.208,-1.801l-0.15,-1.801l-0.153,-1.253l-0.363,-2.547l-0.138,-0.781l-0.462,-2.98l-0.274,-1.316l-0.319,-0.99l-0.077,-0.143l-0.668,-0.865l-0.334,-0.552l-0.368,-0.821l-0.138,-0.408l-0.322,-1.162l-0.155,-1.504l-0.128,-0.61l-0.327,-1.196l-0.024,-0.629l-0.119,-0.686l-0.11,-1.118l-0.012,-1.217l0.035,-0.995l0.053,-0.396l-0.012,-0.667l0.13,-2.013l0.08,-0.359l0.229,-1.715l0.05,-0.78l0.168,-1.628l0.151,-0.918l0.091,-0.309l0.207,-0.348l0.236,-0.257l0.596,-0.471l1.213,-1.004l0.249,-0.158l0.248,-0.046l1.088,-0.029l0.802,-0.096l0.686,-0.029l0.562,0.108l1.594,-0.006l1.361,0.047l0.657,0.044l2.095,0.022l1.461,-0.054l0.868,-0.119l0.491,-0.277l1.269,-1.098l0.515,-0.488l0.45,-0.322l0.52,-0.302l0.142,-0.061l0.311,-0.061l0.332,0.016l0.975,0.143l0.243,-0.141l0.35,-0.022l1.248,0.13l2.113,0.338l2.954,0.417l1.498,0.229l1.056,-0.032l0.466,-0.047l1.496,-0.071l0.815,-0.059l2.811,0.034l2.049,-0.114l0.5,-0.089l1.363,0.062l3.957,0.094l3.372,-0.074z" id="svg_1" stroke="#000000" fill="#ff0000"/>
           <ellipse fill="#59c1ea" cx="275.18087" cy="308.59778" id="svg_9" rx="8.21861" ry="4.85829" stroke="#000000"/>
           <ellipse fill="#59c1ea" cx="276.86865" cy="305.54711" id="svg_14" rx="2.2672" ry="0.21474" stroke="#ffffff"/>
@@ -165,6 +160,22 @@
           <path fill="none" stroke="#000000" id="svg_32" d="m261.08066,307.79568c0,0 0,0 0,0.10754l0.10751,0"/>
           <path fill="none" stroke="#000000" id="svg_42" d="m262.0484,318.65591c0,0 0,0 0,-0.10751c0,-0.10754 0.04117,-0.22324 0,-0.3226c-0.0582,-0.1405 -0.10754,-0.21506 -0.10754,-0.32257c0,-0.21506 -0.04932,-0.28961 -0.10751,-0.43011c-0.08228,-0.1987 -0.05228,-0.30362 -0.10751,-0.53763c-0.02472,-0.10468 -0.10754,-0.21506 -0.10754,-0.32257c0,-0.21506 0,-0.3226 0,-0.53766c0,-0.10751 0,-0.21503 0,-0.32257c0,-0.21506 0,-0.32257 0,-0.43011c0,-0.10751 0,-0.21506 0,-0.32257c0,-0.10751 0,-0.21506 0,-0.32257c0,-0.10754 0,-0.21506 0,-0.3226c0,-0.21506 0,-0.32257 0,-0.43008c0,-0.10754 0,-0.10754 0,-0.3226c0,0 0,-0.10751 0,-0.21506c0,-0.10751 0,-0.10751 0,-0.21503c0,-0.10754 0,-0.21506 0,-0.3226c0,-0.10751 0,-0.21506 0,-0.32257c0,-0.10754 0,-0.32257 0,-0.32257c0,-0.21506 0,-0.21506 0,-0.3226c0,-0.10751 0,-0.21506 0,-0.21506c0,-0.10751 0,-0.21506 0,-0.21506c0,-0.10751 0,-0.21503 0,-0.32257c0,-0.10751 0,-0.10751 0,-0.21506c0,-0.10751 0,-0.21506 0,-0.32257c0,0 0.03149,-0.03149 0.10754,-0.10754c0.07602,-0.07602 0,-0.21503 0,-0.21503c0,-0.10754 0,-0.21506 0,-0.21506c0,-0.10754 0,-0.21506 0,-0.3226c0,-0.10751 0.10751,-0.21503 0.10751,-0.21503c0,-0.10754 0,-0.10754 0,-0.21506c0,-0.10754 0,-0.10754 0,-0.10754c0,-0.10751 0,-0.10751 0,-0.10751c0,-0.10754 0,-0.10754 0,-0.21506c0,0 0.10751,-0.10754 0.10751,-0.10754c0,-0.10751 0,-0.10751 0,-0.10751c0,-0.10751 0,-0.10751 0,-0.10751c0,0 0,-0.10754 0,-0.21506c0,0 0,0 0,-0.10754c0,0 0,-0.10751 0,-0.10751c0,0 0,-0.10754 0,-0.10754c0,0 0,-0.10751 0,-0.10751l0,0"/>
         </g>
+        {/if}
+      </g>
+      <g>
+        {#if value === 6}
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <g transform="translate(695,5)" on:click={()=>{reset()}}>
+          <rect width={100} height={50} fill="white" stroke="black"></rect>
+          <text x={50} y={25} alignment-baseline="middle" text-anchor="middle">Reset</text>
+        </g>
+        <text text-anchor="middle" alignment-baseline="middle" x="50%" y={25} font-size={25}>Hover over a Neighborhood to see stats</text>
+          {#if hoveredNeighborhood}
+            <text x={5} y={725} font-size={25}>{hoveredNeighborhood}</text>
+            <text x={5} y={750}># Motor Theft: {neighborhoodStats.motor_theft.toFixed(2)}</text>
+            <text x={5} y={775}># Theft: {neighborhoodStats.theft.toFixed(2)}</text>
+            <text x={5} y={795} font-size={9}>based on 2022 data</text>
+          {/if}
         {/if}
       </g>
     </svg>
@@ -208,7 +219,7 @@
   }
 
   .step {
-    height: 100vh;
+    height: 130vh;
     display: flex;
     place-items: center;
     justify-content: center;
@@ -263,6 +274,9 @@
 	}
 
   @media screen and (max-width: 768px) {
+    .step {
+    height: 170vh;
+  }
     .section-container {
       align-items: center;
       flex-direction: column-reverse;
