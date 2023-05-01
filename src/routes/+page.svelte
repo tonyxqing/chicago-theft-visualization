@@ -18,7 +18,7 @@
       "<p>In addition to the choropleth map, we've also used a kernel density plot to visualize the distribution of thefts across Chicago. Through providing a continuous representation of the density of thefts across the city, this plot can reveal patterns that might not be immediately apparent from other types of visualization. For instance, it can help identify areas with high concentrations of thefts that might not be highlighted by the choropleth map, which can be influenced by the size and shape of each neighborhood.</p><p>Using this complementary approach, we can gain a more complete understanding of the prevalence and distribution of theft in Chicago, and better inform efforts to address this important issue.</p>",
       "<p>Our choropleth map of motor thefts in Chicago provides an overview of the distribution of this type of crime across the city. While the map may not reveal many noticeable differences compared to the theft map, it does show that certain neighborhoods have a higher concentration of incidents relative to their size. We can see that the concentration for motor theft shifts primarily to South Chicago when compared to thefts.</p>",
       "<p>The KDE plot of motor thefts in Chicago highlights the difference in pattern of motor theft concentration compared to our previous plot of thefts overall. In contrast to the previous plot that showed the highest concentration of thefts occurring in the Loop and extending up to Rogers Park in the North, this plot shows that the highest concentration of motor thefts is clustered around the Loop and down to the South Chicago area.</p><p>This information can be useful for identifying the areas where interventions and prevention strategies need to be targeted to address the specific challenge of motor theft in Chicago. By examining both plots, we can develop a more complete understanding of the spatial patterns of theft and motor theft across the city.</p>",
-      "<p>A closer look at the Loop reveals something sus.</p>",
+      "<p>Upon closer inspection of the kernel density plots, we can see that both have peaks located in the Loop area. It seems that the Loop is not only a popular destination for commuters, but also for suspicious figures.</p>",
       "<p>Visualizations of theft and motor theft in Chicago reveal that these crimes are prevalent across the city, with concentrations varying in different neighborhoods. Combating these crimes presents significant challenges for law enforcement and communities alike, including limited resources, complex socio-economic factors, and evolving criminal tactics.<p></p>Additionally, dense urban areas and underreporting of incidents further complicate efforts to address these crimes effectively. Despite these challenges, law enforcement and communities are working together to implement prevention and intervention strategies to reduce the incidence of theft and motor theft in Chicago. By utilizing data-driven approaches, such as the visualizations presented here, we can better understand the scope of the problem and allocate resources more effectively to combat these crimes.</p>"
     ];
     let svg: d3.Selection<SVGElement, any, null, any>;
@@ -198,7 +198,8 @@
 
   .map-container {
     display: flex;
-    height: 90vh;
+    height: 60%;
+    max-height:90vh;
     max-width: 100%;
     background: linear-gradient(to bottom right, steelblue -100%, white 100%);
     border-radius: 5px;
